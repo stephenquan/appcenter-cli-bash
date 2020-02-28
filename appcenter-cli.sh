@@ -54,16 +54,16 @@ EOF
 
 #----------------------------------------------------------------------
 
-json_pretty() {
+json_helper() {
 
     case "${uname_s?}" in
 
     MINGW*)
-        cscript //nologo "${script_dir?}"/json-pretty-win.js
+        cscript //nologo "${script_dir?}"/json-helper-win.js "$@"
         ;;
 
     *)
-        python -m json.tool
+        python "${script_dir?}"/json-helper.py "$@"
         ;;
 
     esac
@@ -261,7 +261,7 @@ appcenter_apps() {
         --header 'X-API-Token: '${api_token?} \
         https://api.appcenter.ms/v0.1/apps \
 	2> ${stderr_file?} \
-	| json_pretty \
+	| json_helper \
 	| tee ${stdout_file?}
 }
 
@@ -283,10 +283,12 @@ find_app_name() {
 
 find_app_id() {
 
-    app_id=$( \
-	    grep '"id": [0-9]' "${stdout_file?}" \
-	    | head -1 \
-	    | perl -pe 's/.*"id": ([0-9]*).*/\1/' )
+    # app_id=$( \
+# 	    grep '"id": [0-9]' "${stdout_file?}" \
+# 	    | head -1 \
+# 	    | perl -pe 's/.*"id": ([0-9]*).*/\1/' )
+
+    app_id=$( json_helper id < "${stdout_file?}" )
 
     validate_app_id
 
@@ -296,10 +298,12 @@ find_app_id() {
 
 find_app_version() {
 
-    app_version=$( \
-	    grep '"version": ".*"' "${stdout_file?}" \
-	    | head -1 \
-	    | perl -pe 's/.*"version": "(.*)".*/\1/' )
+    # app_version=$( \
+# 	    grep '"version": ".*"' "${stdout_file?}" \
+# 	    | head -1 \
+# 	    | perl -pe 's/.*"version": "(.*)".*/\1/' )
+
+    app_version=$( json_helper version < "${stdout_file?}" )
 
     validate_app_version
 
@@ -374,7 +378,7 @@ appcenter_info() {
             --header 'X-API-Token: '${api_token?} \
 	    https://api.appcenter.ms/v0.1/apps/${owner_name?}/${app_name?}/distribution_groups/${distribution_group?}/releases/${release_id?} \
 	    2> ${stderr_file?} \
-	    | json_pretty \
+	    | json_helper \
 	    | tee ${stdout_file?}
 
     else
@@ -386,7 +390,7 @@ appcenter_info() {
             --header 'X-API-Token: '${api_token?} \
             https://api.appcenter.ms/v0.1/apps/${owner_name?}/${app_name}/releases/${release_id?} \
 	    2> ${stderr_file?} \
-	    | json_pretty \
+	    | json_helper \
 	    | tee ${stdout_file?}
 
     fi
