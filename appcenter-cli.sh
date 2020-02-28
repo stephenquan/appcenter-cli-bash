@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 
 #----------------------------------------------------------------------
 
@@ -12,6 +12,7 @@ stdout_file=/tmp/appcenter-cli-stdout.txt
 
 #----------------------------------------------------------------------
 
+debug=0
 api_token=
 owner_name=
 app_name=
@@ -44,6 +45,7 @@ Syntax: appcenter
                    -o owner_name
                    -X display_name
                    -D distribution_group
+		   -d
 		   -i release_id ( default 'latest' )
                    -t api_token
 		   -c command ( default 'info' ) 
@@ -57,7 +59,7 @@ json_pretty() {
     case "${uname_s?}" in
 
     MINGW*)
-        cscript //nologo json-pretty-win.js
+        cscript //nologo "${script_dir?}"/json-pretty-win.js
         ;;
 
     *)
@@ -269,7 +271,7 @@ find_app_name() {
     validate_display_name
 
     app_name=$( \
-            grep -A20 '"display_name": "'"${display_name?}"'"' "${stdout_file?}" \
+            grep -B5 -A5 '"display_name": "'"${display_name?}"'"' "${stdout_file?}" \
 	    | grep '"name": ".*"' \
 	    | head -1 \
 	    | perl -pe 's/.*"name": "(.*)".*/\1/' )
@@ -356,7 +358,11 @@ appcenter_info() {
     validate_display_name
     validate_release_id
 
-    appcenter_apps
+    appcenter_apps > /dev/null
+    if (( debug )); then
+        cat "${stdout_file?}"
+    fi
+
     find_app_name
 
     if [ "${distribution_group}" != "" ]; then
@@ -515,7 +521,7 @@ appcenter_download()
 
 #----------------------------------------------------------------------
 
-while getopts ":X:i:o:D:t:c:" opt; do
+while getopts ":X:i:o:dD:t:c:" opt; do
 
     case ${opt?} in
 
@@ -535,6 +541,11 @@ while getopts ":X:i:o:D:t:c:" opt; do
         release_id=${OPTARG?}
 	validate_release_id
 	write_config_setting release_id "${release_id?}"
+	;;
+
+    d)
+        debug=1
+        set -x
 	;;
 
     D)
