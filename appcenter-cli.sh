@@ -269,60 +269,31 @@ appcenter_apps() {
 
 find_app_name() {
     validate_display_name
-
-    app_name=$( \
-            grep -B5 -A5 '"display_name": "'"${display_name?}"'"' "${stdout_file?}" \
-	    | grep '"name": ".*"' \
-	    | head -1 \
-	    | perl -pe 's/.*"name": "(.*)".*/\1/' )
-
+    app_name=$( json_helper '[display_name='"${display_name}"']' name -raw < "${stdout_file}" )
     validate_app_name
 }
 
 #----------------------------------------------------------------------
 
 find_app_id() {
-
-    # app_id=$( \
-# 	    grep '"id": [0-9]' "${stdout_file?}" \
-# 	    | head -1 \
-# 	    | perl -pe 's/.*"id": ([0-9]*).*/\1/' )
-
     app_id=$( json_helper id < "${stdout_file?}" )
-
     validate_app_id
-
 }
 
 #----------------------------------------------------------------------
 
 find_app_version() {
-
-    # app_version=$( \
-# 	    grep '"version": ".*"' "${stdout_file?}" \
-# 	    | head -1 \
-# 	    | perl -pe 's/.*"version": "(.*)".*/\1/' )
-
     app_version=$( json_helper version < "${stdout_file?}" )
-
     validate_app_version
-
 }
 
 #----------------------------------------------------------------------
 
 find_app_short_version() {
-
-    app_short_version=$( \
-	    grep '"short_version": ".*"' "${stdout_file?}" \
-	    | head -1 \
-	    | perl -pe 's/.*"short_version": "(.*)".*/\1/' )
-
-
+    app_short_version=$( json_helper short_version -raw < "${stdout_file?}" )
     if [ "${app_short_version?}" == "" ]; then
         app_short_version="${app_version?}"
     fi
-
     validate_app_short_version
 
 }
@@ -330,27 +301,15 @@ find_app_short_version() {
 #----------------------------------------------------------------------
 
 find_app_download_url() {
-
-    app_download_url=$( \
-	    grep '"download_url": ".*"' "${stdout_file?}" \
-	    | head -1 \
-	    | perl -pe 's/.*"download_url": "(.*)".*/\1/' )
-
+    app_download_url=$( json_helper download_url -raw < "${stdout_file?}" )
     validate_app_download_url
-
 }
 
 #----------------------------------------------------------------------
 
 find_app_size() {
-
-    app_size=$( \
-	    grep '"size": [0-9]' "${stdout_file?}" \
-	    | head -1 \
-	    | perl -pe 's/.*"size": ([0-9]*).*/\1/' )
-
+    app_size=$( json_helper size -raw < "${stdout_file?}" )
     validate_app_size
-
 }
 
 #----------------------------------------------------------------------
@@ -595,10 +554,4 @@ EOF
     exit 1
 
 esac
-
-# appcenter_release ${default_owner_name} ${default_app_name} 888
-# appcenter_release
-
-# appcenter_release_by_distribution_group ${default_owner_name} ${default_app_name} ${default_distribution_group} latest
-
 
