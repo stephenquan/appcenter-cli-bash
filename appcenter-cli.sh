@@ -276,18 +276,6 @@ appcenter_apps() {
         | json_helper \
         | tee ${stdout_file?}
 
-    # curl \
-#         -X GET \
-#         --header 'Content-Type: application/json' \
-#         --header 'Accept: application/json' \
-#         --header 'Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7' \
-#         --header 'X-API-Token: '${api_token?} \
-#         https://api.appcenter.ms/v0.1/apps \
-# 	-o ${stdout_file?} \
-# 	2> ${stderr_file?} \
-# 
-# 	cat ${stdout_file?}
-
 }
 
 #----------------------------------------------------------------------
