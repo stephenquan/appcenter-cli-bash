@@ -18,7 +18,7 @@ owner_name=
 app_name=
 display_name=
 distribution_group=
-release_id=
+release_id=latest
 app_id=
 app_short_version=
 app_version=
@@ -45,10 +45,10 @@ Syntax: appcenter
                    -o owner_name
                    -X display_name
                    -D distribution_group
-		   -d
-		   -i release_id ( default 'latest' )
+                   -d
+                   -i release_id ( default 'latest' )
                    -t api_token
-		   -c command ( default 'info' ) 
+                   -c command ( default 'info' ) 
 EOF
 }
 
@@ -136,6 +136,7 @@ EOF
 #----------------------------------------------------------------------
 
 validate_app_name() {
+
     if [ "${app_name}" == "" ]; then
         cat <<EOF
 Error: Cannot determine app_name. Please check -X display_name.
@@ -143,6 +144,15 @@ EOF
         show_syntax
         exit 1
     fi
+
+    if ! [[ "${app_name?}" =~ ^([0-9A-Za-z._\-][0-9A-Za-z._\-]*)$ ]]; then
+        cat <<EOF
+Error: Invalid app_name: ${app_name?}.
+EOF
+        show_syntax
+        exit 1
+    fi
+
 }
 
 #----------------------------------------------------------------------
@@ -153,7 +163,7 @@ validate_app_id() {
 Error: Invalid app_id: ${app_id?}.
 EOF
         show_syntax
-	exit 1
+        exit 1
     fi
 }
 
@@ -215,7 +225,7 @@ EOF
 Error: Invalid release_id: ${release_id?}.
 EOF
         show_syntax
-	exit 1
+        exit 1
     fi
 }
 
@@ -234,7 +244,7 @@ EOF
 Warning: Invalid -t api_token: ${api_token?}
 EOF
         show_syntax
-	# exit 1
+        # exit 1
     fi
 }
 
@@ -246,7 +256,7 @@ validate_app_size() {
 Error: Invalid app_size: ${app_size?}.
 EOF
         show_syntax
-	exit 1
+        exit 1
     fi
 }
 
@@ -254,15 +264,30 @@ EOF
 
 appcenter_apps() {
     validate_api_token
+
     curl \
         -X GET \
         --header 'Content-Type: application/json' \
         --header 'Accept: application/json' \
+        --header 'Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7' \
         --header 'X-API-Token: '${api_token?} \
         https://api.appcenter.ms/v0.1/apps \
-	2> ${stderr_file?} \
-	| json_helper \
-	| tee ${stdout_file?}
+        2> ${stderr_file?} \
+        | json_helper \
+        | tee ${stdout_file?}
+
+    # curl \
+#         -X GET \
+#         --header 'Content-Type: application/json' \
+#         --header 'Accept: application/json' \
+#         --header 'Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7' \
+#         --header 'X-API-Token: '${api_token?} \
+#         https://api.appcenter.ms/v0.1/apps \
+# 	-o ${stdout_file?} \
+# 	2> ${stderr_file?} \
+# 
+# 	cat ${stdout_file?}
+
 }
 
 #----------------------------------------------------------------------
@@ -270,6 +295,8 @@ appcenter_apps() {
 find_app_name() {
     validate_display_name
     app_name=$( json_helper '[display_name='"${display_name}"']' name -raw < "${stdout_file}" )
+    # set -x
+    # app_name=$( cat "${stdout_file}" | json_helper '[display_name='"${display_name}"']' name -raw )
     validate_app_name
 }
 
@@ -322,9 +349,9 @@ appcenter_info() {
     validate_release_id
 
     appcenter_apps > /dev/null
-    if (( debug )); then
-        cat "${stdout_file?}"
-    fi
+    # if (( debug )); then
+    #     cat "${stdout_file?}"
+    # fi
 
     find_app_name
 
@@ -335,10 +362,10 @@ appcenter_info() {
             --header 'Content-Type: application/json' \
             --header 'Accept: application/json' \
             --header 'X-API-Token: '${api_token?} \
-	    https://api.appcenter.ms/v0.1/apps/${owner_name?}/${app_name?}/distribution_groups/${distribution_group?}/releases/${release_id?} \
-	    2> ${stderr_file?} \
-	    | json_helper \
-	    | tee ${stdout_file?}
+            https://api.appcenter.ms/v0.1/apps/${owner_name?}/${app_name?}/distribution_groups/${distribution_group?}/releases/${release_id?} \
+            2> ${stderr_file?} \
+            | json_helper \
+            | tee ${stdout_file?}
 
     else
 
@@ -348,9 +375,9 @@ appcenter_info() {
             --header 'Accept: application/json' \
             --header 'X-API-Token: '${api_token?} \
             https://api.appcenter.ms/v0.1/apps/${owner_name?}/${app_name}/releases/${release_id?} \
-	    2> ${stderr_file?} \
-	    | json_helper \
-	    | tee ${stdout_file?}
+            2> ${stderr_file?} \
+            | json_helper \
+            | tee ${stdout_file?}
 
     fi
 
@@ -432,7 +459,7 @@ EOF
 Error: Cannot locate filename in archive.
 EOF
         rm -rf "${app_filename?}".dir
-	return
+        return
     fi
 
     mv "${app_filename?}".dir/"${filename?}" "${app_filename?}"
@@ -449,34 +476,37 @@ appcenter_download()
     appcenter_info
 
     curl -I "${app_download_url?}" \
-	2> ${stderr_file?} \
-	| tee ${stdout_file?}
+        2> ${stderr_file?} \
+        | tee ${stdout_file?}
 
     local suffix=_"${app_short_version//./_}"_"${app_id?}"
 
     case "${display_name}" in
+
     *.*)
         app_filename=${display_name/./${suffix}.}
-	;;
+        ;;
+
     *)
         app_filename=${display_name?}${suffix}.zip
-	;;
+        ;;
+
     esac
 
     content_type=$(
             grep '^Content-Type: ' "${stdout_file?}" \
-	    | head -1 \
-	    | perl -pe 's/^Content-Type: (.*)/\1/' )
+            | head -1 \
+            | perl -pe 's/^Content-Type: (.*)/\1/' )
 
     case "${app_filename?}" in
 
     *.exe)
         appcenter_download_unzip
-	;;
+        ;;
 
     *)
         appcenter_download_raw
-	;;
+        ;;
 
     esac
 
@@ -490,38 +520,38 @@ while getopts ":X:i:o:dD:t:c:" opt; do
 
     o)
         owner_name=${OPTARG?}
-	validate_owner_name
-	write_config_setting owner_name "${owner_name?}"
-	;;
+        validate_owner_name
+        write_config_setting owner_name "${owner_name?}"
+        ;;
 
     X)
         display_name=${OPTARG?}
-	validate_display_name
-	write_config_setting display_name "${display_name?}"
-	;;
+        validate_display_name
+        write_config_setting display_name "${display_name?}"
+        ;;
 
     i)
         release_id=${OPTARG?}
-	validate_release_id
-	write_config_setting release_id "${release_id?}"
-	;;
+        validate_release_id
+        write_config_setting release_id "${release_id?}"
+        ;;
 
     d)
         debug=1
         set -x
-	;;
+        ;;
 
     D)
         distribution_group=${OPTARG?}
-	# validate_distribution_group
-	write_config_setting distribution_group "${distribution_group?}"
-	;;
+        # validate_distribution_group
+        write_config_setting distribution_group "${distribution_group?}"
+        ;;
 
     t)
         api_token=${OPTARG?}
-	validate_api_token
-	write_config_setting api_token "${api_token?}"
-	;;
+        validate_api_token
+        write_config_setting api_token "${api_token?}"
+        ;;
 
     c)
         cmd=${OPTARG?}
